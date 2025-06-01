@@ -44,6 +44,10 @@ public:
 private:
     int memory_allocated = 1;
     char* clipboard;
+    std::vector<char**> undoStack;
+    std::vector<char**> redoStack;
+    void saveAction();
+    char** copyState();
     static char *readInput();
 };
 
@@ -186,6 +190,7 @@ int main() {
 }
 
 void TextEditor::newLine() {
+    saveAction();
     row++;
     symbol = 0;
     text = (char**)realloc(text, memory_allocated += sizeof(char *));
@@ -242,9 +247,12 @@ void TextEditor::load() {
     }
     fclose(file);
     printf("Text has been loaded successfully\n");
+    undoStack.clear();
+    redoStack.clear();
 }
 
 void TextEditor::insert(int r, int s) {
+    saveAction();
     int temp;
     while ((temp = getchar()) != '\n' && temp != EOF) {}
 
@@ -320,6 +328,7 @@ char *TextEditor::readInput() {
 }
 
 void TextEditor::_delete(int r, int s, int c) {
+    saveAction();
     int i = 0;
     while (*(*(text + r) + s + i) != '\0') {
         *(*(text + r) + s + i) = *(*(text + r) + s + i + c);
@@ -328,11 +337,19 @@ void TextEditor::_delete(int r, int s, int c) {
 }
 
 void TextEditor::undo() {
-
+    if (undoStack.empty())
+        return;
+    redoStack.push_back(copyState());
+    text = undoStack.back();
+    undoStack.pop_back();
 }
 
 void TextEditor::redo() {
-
+    if (redoStack.empty())
+        return;
+    undoStack.push_back(copyState());
+    text = redoStack.back();
+    redoStack.pop_back();
 }
 
 void TextEditor::cut(int r, int s, int c) {
@@ -346,6 +363,7 @@ void TextEditor::cut(int r, int s, int c) {
 }
 
 void TextEditor::paste(int r, int s) {
+    saveAction();
     if (clipboard == nullptr)
         return;
     int length = 0; while (*(clipboard + length) != '\0') length++;
@@ -379,4 +397,28 @@ void TextEditor::copy(int r, int s, int c) {
 void TextEditor::insert_r(int r, int s) {
 
 }
+
+void TextEditor::saveAction() {
+    undoStack.push_back(copyState());
+    redoStack.clear();
+
+    if (undoStack.size() > 10) {
+        undoStack.erase(undoStack.begin());
+    }
+}
+
+char **TextEditor::copyState() {
+    char** copy = new char*[row+1];
+    for (int i = 0; i <= row; i++) {
+        if (text[i]) {
+            int len = strlen(text[i]);
+            copy[i] = new char[len + 1];
+            strcpy(copy[i], text[i]);
+        } else {
+            copy[i] = nullptr;
+        }
+    }
+    return copy;
+}
+
 
