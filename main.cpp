@@ -395,7 +395,33 @@ void TextEditor::copy(int r, int s, int c) {
 }
 
 void TextEditor::insert_r(int r, int s) {
+    saveAction();
+    int temp;
+    while ((temp = getchar()) != '\n' && temp != EOF) {}
 
+    char *input = readInput();
+
+    int length = 0;
+    while (*(input + length) != '\0') length++;
+
+    _delete(r,s,length);
+
+    if (r == row && s == symbol && symbol == 0) *(text + r) = (char*)malloc(length);
+    else *(text + r) = (char*)realloc(*(text + r), memory_allocated += length);
+
+    if (r == row && s == symbol)
+        for (int i = 0; i < length; i++)
+            *(*(text + r) + s + i) = *(input + i);
+    else{
+        for (int i = strlen(*(text + r)); i >= s; i--)
+            *(*(text + r) + length + i) = *(*(text + r) + i);
+        for (int i = 0; i < length; i++)
+            *(*(text + r) + s + i) = *(input + i);
+    }
+
+    symbol += length;
+    free(input);
+    printf("\n");
 }
 
 void TextEditor::saveAction() {
