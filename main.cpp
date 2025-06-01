@@ -17,29 +17,17 @@ public:
     }
 
     void newLine();
-
     void save();
-
     void load();
-
     void print();
-
     void insert(int r, int s);
-
     void search();
-
     void _delete(int r, int s, int c);
-
     void undo();
-
     void redo();
-
     void cut(int r, int s, int c);
-
     void paste(int r, int s);
-
     void copy(int r, int s, int c);
-
     void insert_r(int r, int s);
 private:
     int memory_allocated = 1;
@@ -352,6 +340,29 @@ void TextEditor::redo() {
     redoStack.pop_back();
 }
 
+void TextEditor::saveAction() {
+    undoStack.push_back(copyState());
+    redoStack.clear();
+
+    if (undoStack.size() > 10) {
+        undoStack.erase(undoStack.begin());
+    }
+}
+
+char **TextEditor::copyState() {
+    char** copy = new char*[row+1];
+    for (int i = 0; i <= row; i++) {
+        if (text[i]) {
+            int len = strlen(text[i]);
+            copy[i] = new char[len + 1];
+            strcpy(copy[i], text[i]);
+        } else {
+            copy[i] = nullptr;
+        }
+    }
+    return copy;
+}
+
 void TextEditor::cut(int r, int s, int c) {
     clipboard = (char*)malloc(c);
     for (int i = 0; i < c; i++) {
@@ -404,47 +415,15 @@ void TextEditor::insert_r(int r, int s) {
     int length = 0;
     while (*(input + length) != '\0') length++;
 
-    _delete(r,s,length);
-
-    if (r == row && s == symbol && symbol == 0) *(text + r) = (char*)malloc(length);
-    else *(text + r) = (char*)realloc(*(text + r), memory_allocated += length);
-
-    if (r == row && s == symbol)
-        for (int i = 0; i < length; i++)
-            *(*(text + r) + s + i) = *(input + i);
-    else{
-        for (int i = strlen(*(text + r)); i >= s; i--)
-            *(*(text + r) + length + i) = *(*(text + r) + i);
-        for (int i = 0; i < length; i++)
-            *(*(text + r) + s + i) = *(input + i);
+    int i = 0;
+    while (i < length && *(*(text + r) + s + i) != '\0') {
+        *(*(text + r) + s + i) = *(input + i);
+        i++;
     }
-
-    symbol += length;
     free(input);
     printf("\n");
 }
 
-void TextEditor::saveAction() {
-    undoStack.push_back(copyState());
-    redoStack.clear();
 
-    if (undoStack.size() > 10) {
-        undoStack.erase(undoStack.begin());
-    }
-}
-
-char **TextEditor::copyState() {
-    char** copy = new char*[row+1];
-    for (int i = 0; i <= row; i++) {
-        if (text[i]) {
-            int len = strlen(text[i]);
-            copy[i] = new char[len + 1];
-            strcpy(copy[i], text[i]);
-        } else {
-            copy[i] = nullptr;
-        }
-    }
-    return copy;
-}
 
 
